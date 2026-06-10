@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BuscaIA — Busca, pregunta, aprende</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f13;
+      --surface: #17171d;
+      --surface-2: #1f1f28;
+      --border: rgba(255,255,255,0.08);
+      --border-hover: rgba(255,255,255,0.16);
+      --accent: #7c6af7;
+      --accent-glow: rgba(124,106,247,0.18);
+      --accent-light: #a99cf9;
+      --text: #f0eff8;
+      --text-muted: #8f8ea8;
+      --text-faint: #4e4d62;
+      --danger: #f87171;
+      --font-display: 'Sora', sans-serif;
+      --font-body: 'Inter', sans-serif;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 2rem;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: rgba(15,15,19,0.85);
+      backdrop-filter: blur(12px);
+      z-index: 100;
+    }
+
+    .logo {
+      font-family: var(--font-display);
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+    }
+
+    .header-badge {
+      font-size: 12px;
+      color: var(--text-muted);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      padding: 4px 12px;
+    }
+
+    .hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 5rem 1.5rem 3rem;
+    }
+
+    .hero-eyebrow {
+      font-size: 12px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent-light);
+      margin-bottom: 1.25rem;
+      font-weight: 500;
+    }
+
+    .hero-title {
+      font-family: var(--font-display);
+      font-size: clamp(2rem, 5vw, 3.25rem);
+      font-weight: 700;
+      line-height: 1.15;
+      color: var(--text);
+      margin-bottom: 1rem;
+      max-width: 640px;
+    }
+
+    .hero-title span { color: var(--accent-light); }
+
+    .hero-sub {
+      font-size: 15px;
+      color: var(--text-muted);
+      max-width: 460px;
+      line-height: 1.7;
+      margin-bottom: 2.5rem;
+    }
+
+    .search-wrapper { width: 100%; max-width: 640px; position: relative; }
+
+    .search-bar {
+      display: flex;
+      align-items: center;
+      background: var(--surface);
+      border: 1px solid var(--border-hover);
+      border-radius: var(--radius);
+      padding: 4px 4px 4px 16px;
+      gap: 8px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .search-bar:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .search-icon { color: var(--text-faint); flex-shrink: 0; }
+
+    #query {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 15px;
+      padding: 10px 0;
+    }
+
+    #query::placeholder { color: var(--text-faint); }
+
+    #btn-buscar {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 10px 20px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font-body);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: opacity 0.15s, transform 0.15s;
+      white-space: nowrap;
+    }
+
+    #btn-buscar:hover { opacity: 0.9; }
+    #btn-buscar:active { transform: scale(0.97); }
+    #btn-buscar:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 1rem;
+      max-width: 640px;
+    }
+
+    .suggestion-pill {
+      font-size: 13px;
+      padding: 6px 14px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+
+    .suggestion-pill:hover {
+      border-color: var(--accent);
+      color: var(--accent-light);
+      background: var(--accent-glow);
+    }
+
+    main { max-width: 720px; margin: 0 auto; padding: 0 1.5rem 4rem; }
+
+    #status {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 1rem 1.25rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 1.5rem;
+    }
+
+    .spinner {
+      width: 16px; height: 16px;
+      border: 2px solid var(--border-hover);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #result-container { display: none; }
+
+    .result-query-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-faint);
+      margin-bottom: 0.5rem;
+    }
+
+    .result-query-text {
+      font-family: var(--font-display);
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 1rem;
+    }
+
+    .answer-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .answer-label {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-light);
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+
+    .answer-label-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    #answer-text {
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.75;
+      white-space: pre-wrap;
+    }
+
+    #error-box {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 1rem 1.25rem;
+      background: rgba(248,113,113,0.08);
+      border: 1px solid rgba(248,113,113,0.2);
+      border-radius: var(--radius-sm);
+      color: var(--danger);
+      font-size: 14px;
+      margin-bottom: 1.5rem;
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-faint);
+      font-size: 13px;
+      border-top: 1px solid var(--border);
+    }
+
+    @media (max-width: 520px) {
+      header { padding: 1rem; }
+      .hero { padding: 3rem 1rem 2rem; }
+      #btn-buscar span { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <a class="logo" href="/">
+      <span class="logo-dot"></span>
+      BuscaIA
+    </a>
+    <span class="header-badge">Búsqueda con IA</span>
+  </header>
+
+  <section class="hero">
+    <p class="hero-eyebrow">Inteligencia artificial en tiempo real</p>
+    <h1 class="hero-title">Pregunta cualquier cosa,<br><span>obtén respuestas reales</span></h1>
+    <p class="hero-sub">BuscaIA usa inteligencia artificial para darte respuestas claras y precisas sobre cualquier tema.</p>
+
+    <div class="search-wrapper">
+      <div class="search-bar">
+        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="query" placeholder="¿Qué quieres saber hoy?" autocomplete="off" />
+        <button id="btn-buscar" onclick="buscar()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          <span>Buscar</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="suggestions" id="suggestions"></div>
+  </section>
+
+  <main>
+    <div id="status">
+      <span class="spinner"></span>
+      <span id="status-text">Pensando...</span>
+    </div>
+
+    <div id="error-box">
+      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      <span id="error-text"></span>
+    </div>
+
+    <div id="result-container">
+      <div class="result-query-label">Resultado para</div>
+      <div class="result-query-text" id="result-query"></div>
+      <div class="answer-card">
+        <div class="answer-label">
+          <span class="answer-label-dot"></span>
+          Respuesta de la IA
+        </div>
+        <div id="answer-text"></div>
+      </div>
+    </div>
+  </main>
+
+  <footer>
+    BuscaIA &mdash; Respuestas inteligentes &nbsp;·&nbsp; Powered by Groq AI
+  </footer>
+
+  <script>
+    const SUGGESTIONS = [
+      "¿Qué es la fotosíntesis?",
+      "¿Cómo funciona un agujero negro?",
+      "¿Qué es el ADN?",
+      "¿Cómo se forma el arcoíris?",
+      "¿Qué es la inflación?",
+    ];
+
+    const suggestionsEl = document.getElementById('suggestions');
+    SUGGESTIONS.forEach(q => {
+      const pill = document.createElement('button');
+      pill.className = 'suggestion-pill';
+      pill.textContent = q;
+      pill.addEventListener('click', () => {
+        document.getElementById('query').value = q;
+        buscar();
+      });
+      suggestionsEl.appendChild(pill);
+    });
+
+    document.getElementById('query').addEventListener('keydown', e => {
+      if (e.key === 'Enter') buscar();
+    });
+
+    async function buscar() {
+      const query = document.getElementById('query').value.trim();
+      if (!query) return;
+
+      const btn = document.getElementById('btn-buscar');
+      btn.disabled = true;
+
+      document.getElementById('error-box').style.display = 'none';
+      document.getElementById('result-container').style.display = 'none';
+      document.getElementById('status').style.display = 'flex';
+      document.getElementById('status-text').textContent = 'Pensando...';
+
+      try {
+        const response = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query })
+        });
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          throw new Error(err.error || `Error ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        document.getElementById('result-query').textContent = query;
+        document.getElementById('answer-text').textContent = data.answer;
+        document.getElementById('status').style.display = 'none';
+        document.getElementById('result-container').style.display = 'block';
+        document.getElementById('result-container').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      } catch (err) {
+        document.getElementById('status').style.display = 'none';
+        document.getElementById('error-box').style.display = 'flex';
+        document.getElementById('error-text').textContent = err.message || 'Error inesperado. Intenta de nuevo.';
+      }
+
+      btn.disabled = false;
+    }
+  </script>
+
+</body>
+</html>
