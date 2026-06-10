@@ -3,7 +3,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
-  const { historial } = req.body;
+  const { historial, imagen } = req.body;
 
   if (!historial || !Array.isArray(historial) || historial.length === 0) {
     return res.status(400).json({ error: 'La pregunta no puede estar vacía' });
@@ -15,6 +15,23 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Si hay imagen, usamos el modelo de visión
+    const model = imagen ? 'meta-llama/llama-4-scout-17b-16e-instruct' : 'llama-3.3-70b-versatile';
+
+    // Si hay imagen, modificamos el último mensaje del usuario para incluirla
+    let mensajes = [...historial];
+    if (imagen) {
+      const ultimoIdx = mensajes.length - 1;
+      const textoUsuario = mensajes[ultimoIdx].content || '¿Qué hay en esta imagen?';
+      mensajes[ultimoIdx] = {
+        role: 'user',
+        content: [
+          { type: 'text', text: textoUsuario },
+          { type: 'image_url', image_url: { url: imagen } }
+        ]
+      };
+    }
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -22,18 +39,13 @@ export default async function handler(req, res) {
         'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile',
+        model,
         messages: [
           {
             role: 'system',
-            content: `Eres un asistente de búsqueda inteligente en español.
-Responde de forma clara, precisa y bien estructurada.
-Usa párrafos cortos y fáciles de leer.
-Si la pregunta es sobre un tema técnico, explícalo de forma sencilla.
-Recuerda el contexto de la conversación anterior para dar respuestas coherentes.
-Responde siempre en español.`
+            content: `Eres un asistente inteligente en español. Responde de forma clara y precisa. Si te muestran una imagen, descríbela y responde preguntas sobre ella con detalle. Recuerda el contexto de la conversación. Responde siempre en español.`
           },
-          ...historial
+          ...mensajes
         ],
         max_tokens: 1024,
         temperature: 0.7
