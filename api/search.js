@@ -3,9 +3,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Método no permitido' });
   }
 
-  const { query } = req.body;
+  const { historial } = req.body;
 
-  if (!query || typeof query !== 'string' || query.trim().length === 0) {
+  if (!historial || !Array.isArray(historial) || historial.length === 0) {
     return res.status(400).json({ error: 'La pregunta no puede estar vacía' });
   }
 
@@ -26,16 +26,14 @@ export default async function handler(req, res) {
         messages: [
           {
             role: 'system',
-            content: `Eres un asistente de búsqueda inteligente en español. 
+            content: `Eres un asistente de búsqueda inteligente en español.
 Responde de forma clara, precisa y bien estructurada.
 Usa párrafos cortos y fáciles de leer.
 Si la pregunta es sobre un tema técnico, explícalo de forma sencilla.
+Recuerda el contexto de la conversación anterior para dar respuestas coherentes.
 Responde siempre en español.`
           },
-          {
-            role: 'user',
-            content: query.trim()
-          }
+          ...historial
         ],
         max_tokens: 1024,
         temperature: 0.7
