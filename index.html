@@ -725,7 +725,7 @@
             <li>Respuestas más largas</li>
             <li>Soporte prioritario</li>
           </ul>
-          <button class="btn-plan" onclick="alert('Próximamente disponible. ¡Gracias por tu interés!')">Próximamente</button>
+          <button class="btn-plan" id="btn-suscribirse" onclick="iniciarPago()">Suscribirse — $4.99/mes</button>
         </div>
       </div>
       <div class="planes-note">Los pagos serán procesados de forma segura. Cancela cuando quieras.</div>
@@ -998,6 +998,66 @@
     window.abrirPlanes = () => document.getElementById('planes-overlay').classList.remove('hidden');
     document.getElementById('btn-cerrar-planes').addEventListener('click', () => {
       document.getElementById('planes-overlay').classList.add('hidden');
+    });
+
+    // ── DETECTAR PLAN DEL USUARIO ──
+    async function cargarPlanUsuario(uid) {
+      try {
+        const { getDoc, doc: firestoreDoc } = await import("https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js");
+        const snap = await getDoc(firestoreDoc(db, 'usuarios', uid));
+        const plan = snap.exists() ? (snap.data().plan || 'free') : 'free';
+        const pill = document.getElementById('plan-pill');
+        if (plan === 'pro') {
+          pill.textContent = '⭐ Plan Pro';
+          pill.classList.add('pro');
+          document.getElementById('btn-suscribirse').textContent = 'Plan activo ✓';
+          document.getElementById('btn-suscribirse').disabled = true;
+        } else {
+          pill.textContent = 'Plan Free';
+        }
+      } catch(e) { console.error('Error cargando plan:', e); }
+    }
+
+    // ── DETECTAR REGRESO DE STRIPE ──
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('plan') === 'success') {
+      setTimeout(() => {
+        document.getElementById('planes-overlay').classList.remove('hidden');
+        document.getElementById('btn-suscribirse').textContent = '¡Suscripción activa! ✓';
+        document.getElementById('btn-suscribirse').disabled = true;
+        history.replaceState({}, '', '/');
+      }, 1000);
+    }
+
+    // ── INICIAR PAGO ──
+    window.iniciarPago = async function() {
+      if (!usuarioActual) { alert('Debes iniciar sesión primero.'); return; }
+      const btn = document.getElementById('btn-suscribirse');
+      btn.textContent = 'Redirigiendo...';
+      btn.disabled = true;
+      try {
+        const res = await fetch('/api/checkout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId: usuarioActual.uid, email: usuarioActual.email })
+        });
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          throw new Error(data.error || 'Error al crear sesión de pago');
+        }
+      } catch(e) {
+        alert('Error: ' + e.message);
+        btn.textContent = 'Suscribirse — $4.99/mes';
+        btn.disabled = false;
+      }
+    };
+
+    // Cargar plan cuando el usuario inicia sesión
+    const _origOnAuth = onAuthStateChanged;
+    onAuthStateChanged(auth, async (user) => {
+      if (user) await cargarPlanUsuario(user.uid);
     });
   </script>
 
